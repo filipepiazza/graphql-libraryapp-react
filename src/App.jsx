@@ -37,10 +37,46 @@ import { useState } from "react";
 import Authors from "./components/Authors";
 import Books from "./components/Books";
 import NewBook from "./components/NewBook";
-import { gql, useQuery, useApolloClient } from "@apollo/client";
-import { ALL_AUTHORS, ALL_BOOKS, CURRENT_USER } from "./queries";
+import { useQuery, useApolloClient, useSubscription } from "@apollo/client";
+import {
+  ALL_AUTHORS,
+  ALL_BOOKS,
+  BOOK_ADDED,
+  CURRENT_USER,
+  PERSON_ADDED,
+} from "./graphql/queries";
 import Notify from "./components/Notify";
 import LoginForm from "./components/LoginForm";
+
+const uniqByName = (a) => {
+  let seen = new Set();
+  return a.filter((item) => {
+    let k = item.title;
+    return seen.has(k) ? false : seen.add(k);
+  });
+};
+
+// function that takes care of manipulating cache
+export const updateCache = (cache, query, addedPerson) => {
+  // helper that is used to eliminate saving same person twicE
+  cache.updateQuery(query, ({ allPersons }) => {
+    return {
+      allPersons: uniqByName(allPersons.concat(addedPerson)),
+    };
+  });
+};
+
+// function that takes care of manipulating cache
+export const updateCacheBook = (cache, query, addedBook) => {
+  console.log("addedBook", addedBook);
+
+  // helper that is used to eliminate saving same person twicE
+  cache.updateQuery(query, ({ allBooks }) => {
+    return {
+      allBooks: allBooks.concat(addedBook),
+    };
+  });
+};
 
 const App = () => {
   const [token, setToken] = useState(null);
@@ -52,6 +88,24 @@ const App = () => {
   const authorsResult = useQuery(ALL_AUTHORS);
   const booksResult = useQuery(ALL_BOOKS);
   const currentUser = useQuery(CURRENT_USER);
+
+  useSubscription(PERSON_ADDED, {
+    onData: ({ data, client }) => {
+      const addedPerson = data.data.personAdded;
+      notify(`${addedPerson.name} added`);
+      updateCache(client.cache, { query: ALL_PERSONS }, addedPerson);
+    },
+  });
+
+  useSubscription(BOOK_ADDED, {
+    onData: ({ data, client }) => {
+      const addedBook = data.data.bookAdded;
+      console.log("data", data);
+
+      notify(`${addedBook.title} added`);
+      updateCacheBook(client.cache, { query: ALL_BOOKS }, addedBook);
+    },
+  });
 
   console.log("currentuser", currentUser);
 
@@ -68,7 +122,7 @@ const App = () => {
     setErrorMessage(message);
     setTimeout(() => {
       setErrorMessage(null);
-    }, 10000);
+    }, 1000);
   };
 
   if (!token) {

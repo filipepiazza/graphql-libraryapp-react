@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@apollo/client";
 
-import { ALL_AUTHORS, EDIT_BIRTH_YEAR } from "../queries";
+import { ALL_AUTHORS, EDIT_BIRTH_YEAR } from "../graphql/queries";
 
 import Select from "react-select";
 

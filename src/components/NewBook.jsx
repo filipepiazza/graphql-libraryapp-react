@@ -1,6 +1,27 @@
 import { useState, useEffect } from "react";
 import { gql, useMutation } from "@apollo/client";
-import { ALL_AUTHORS, ALL_BOOKS, CREATE_BOOK } from "../queries";
+import { ALL_AUTHORS, ALL_BOOKS, CREATE_BOOK } from "../graphql/queries";
+// import { updateCacheBook } from "../App";
+// updateCacheBook;
+
+const uniqByName = (a) => {
+  let seen = new Set();
+  return a.filter((item) => {
+    let k = item.title;
+    return seen.has(k) ? false : seen.add(k);
+  });
+};
+
+const updateCacheBook = (cache, query, addedBook) => {
+  console.log("addedbook", addedbook);
+
+  // helper that is used to eliminate saving same person twicE
+  cache.updateQuery(query, ({ allBooks }) => {
+    return {
+      allBooks: uniqByName(allBooks.concat(addedBook)),
+    };
+  });
+};
 
 const NewBook = ({ setError, show }) => {
   const [title, setTitle] = useState("");
@@ -17,11 +38,13 @@ const NewBook = ({ setError, show }) => {
       setError(messages);
     },
     update: (cache, response) => {
-      cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
-        return {
-          allBooks: allBooks.concat(response.data.addBook),
-        };
-      });
+      updateCacheBook(cache, { query: ALL_BOOKS }, response.data.addBook);
+
+      // cache.updateQuery({ query: ALL_BOOKS }, ({ allBooks }) => {
+      //   return {
+      //     allBooks: allBooks.concat(response.data.addBook),
+      //   };
+      // });
       cache.updateQuery({ query: ALL_AUTHORS }, ({ allAuthors }) => {
         return {
           allAuthors: allAuthors.concat(response.data.addBook.author),

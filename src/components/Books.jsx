@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { FILTERED_BOOKS } from "../queries";
+import { FILTERED_BOOKS } from "../graphql/queries";
 import { gql, useQuery, useApolloClient } from "@apollo/client";
 
 const Books = ({ books, show, currentUser }) => {
@@ -22,6 +22,9 @@ const Books = ({ books, show, currentUser }) => {
   });
 
   let filteredBooks;
+
+  console.log("result", result);
+  console.log(selectedGenre);
 
   if (selectedGenre === "All") filteredBooks = books;
   else if (selectedGenre && result.data) {
